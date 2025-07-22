@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NoFeeScan Pro | DeFi Token Scanner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        secondary: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            200: '#f5d0fe',
+                            300: '#f0abfc',
+                            400: '#e879f9',
+                            500: '#d946ef',
+                            600: '#c026d3',
+                            700: '#a21caf',
+                            800: '#86198f',
+                            900: '#701a75',
+                        },
+                        dark: {
+                            100: '#1E293B',
+                            200: '#0F172A',
+                            300: '#020617',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'bounce-slow': 'bounce 2s infinite',
+                        'gradient': 'gradient 8s ease infinite',
+                        'float': 'float 3s ease-in-out infinite',
+                        'spin-slow': 'spin 8s linear infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        gradient: {
+                            '0%': { backgroundPosition: '0% 50%' },
+                            '50%': { backgroundPosition: '100% 50%' },
+                            '100%': { backgroundPosition: '0% 50%' },
+                        }
+                    },
+                    boxShadow: {
+                        'glow': '0 0 15px rgba(56, 189, 248, 0.5)',
+                        'glow-purple': '0 0 15px rgba(216, 70, 239, 0.5)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .font-poppins {
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .bg-gradient {
+            background: linear-gradient(-45deg, #0ea5e9, #d946ef, #0ea5e9, #d946ef);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .dark .glass {
+            background: rgba(15, 23, 42, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .token-card {
+            transition: all 0.3s ease;
+        }
+        
+        .token-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .ai-typing-indicator::after {
+            content: '...';
+            animation: ellipsis 1.5s infinite;
+        }
+        
+        @keyframes ellipsis {
+            0% { content: '.'; }
+            33% { content: '..'; }
+            66% { content: '...'; }
+        }
+        
+        .heart-beat {
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
+        .hidden-message {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+        
+        .hidden-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .glow-effect {
+            box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 10px rgba(14, 165, 233, 0.5);
+            }
+            to {
+                box-shadow: 0 0 20px rgba(14, 165, 233, 0.8), 0 0 30px rgba(217, 70, 239, 0.5);
+            }
+        }
+        
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.5;
+            animation-name: float-particle;
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
+            background: linear-gradient(45deg, #38bdf8, #d946ef);
+        }
+        
+        @keyframes float-particle {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0.5;
+            }
+            50% {
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-dark-200 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+    <!-- Particles Background -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- Navbar -->
+    <nav class="glass fixed top-0 left-0 right-0 z-50 py-4">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <div class="bg-gradient rounded-lg p-2 shadow-lg">
+                    <i class="fas fa-search-dollar text-white"></i>
+                </div>
+                <h1 class="text-xl font-bold font-poppins">NoFeeScan<span class="text-primary-500">Pro</span></h1>
+            </div>
+            
+            <div class="flex items-center space-x-4">
+                <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-100 transition-colors">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:block text-yellow-300"></i>
+                </button>
+                
+                <div id="wallet-status" class="hidden md:flex items-center space-x-2 text-sm">
+                    <div class="h-2 w-2 rounded-full bg-red-500" id="connection-indicator"></div>
+                    <span id="wallet-text">Not Connected</span>
+                </div>
+                
+                <button id="connect-wallet" class="bg-primary-500 hover:bg-primary-600 text-white px-4 py-2 rounded-lg transition-colors shadow-md flex items-center">
+                    <i class="fas fa-wallet mr-2"></i>
+                    <span>Connect Wallet</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 pt-24 pb-16">
+        <!-- Welcome Section (Pre-Connection) -->
+        <section id="welcome-section" class="py-16 text-center">
+            <div class="max-w-3xl mx-auto">
+                <h1 class="text-4xl md:text-5xl font-bold mb-6 font-poppins bg-clip-text text-transparent bg-gradient">NoFeeScan Pro</h1>
+                <p class="text-xl mb-8 text-gray-600 dark:text-gray-300">The AI-powered DeFi scanner that saves you gas and makes smarter swaps</p>
+                
+                <div class="flex flex-col md:flex-row justify-center gap-6 mb-12">
+                    <div class="glass p-6 rounded-xl shadow-lg">
+                        <i class="fas fa-robot text-3xl text-primary-500 mb-4"></i>
+                        <h3 class="text-lg font-semibold mb-2">AI Swap Assistant</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Get smart recommendations on when to swap tokens</p>
+                    </div>
+                    
+                    <div class="glass p-6 rounded-xl shadow-lg">
+                        <i class="fas fa-gas-pump text-3xl text-secondary-500 mb-4"></i>
+                        <h3 class="text-lg font-semibold mb-2">Gas Fee Savings</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Compare and save on transaction costs</p>
+                    </div>
+                    
+                    <div class="glass p-6 rounded-xl shadow-lg">
+                        <i class="fas fa-chart-line text-3xl text-green-500 mb-4"></i>
+                        <h3 class="text-lg font-semibold mb-2">Live Token Charts</h3>
+                        <p class="text-gray-600 dark:text-gray-400">Visualize your portfolio performance</p>
+                    </div>
+                </div>
+                
+                <button id="welcome-connect-btn" class="bg-gradient text-white px-8 py-4 rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 animate-pulse-slow">
+                    <i class="fas fa-plug mr-2"></i>
+                    Connect MetaMask to Start
+                </button>
+            </div>
+        </section>
+        
+        <!-- Dashboard (Post-Connection) -->
+        <section id="dashboard-section" class="hidden">
+            <!-- Portfolio Overview -->
+            <div class="mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                    <h2 class="text-2xl font-bold font-poppins">Portfolio Overview</h2>
+                    <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                        <div class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
+                            <div class="h-2 w-2 rounded-full bg-green-500"></div>
+                            <span>Ethereum Mainnet</span>
+                        </div>
+                        <button id="refresh-btn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-100 transition-colors">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass rounded-xl p-6 shadow-lg">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Total Balance</p>
+                                <h3 class="text-2xl font-bold" id="total-balance">$4,285.62</h3>
+                            </div>
+                            <div class="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 text-xs px-2 py-1 rounded-full flex items-center">
+                                <i class="fas fa-arrow-up mr-1"></i>
+                                <span>2.4%</span>
+                            </div>
+                        </div>
+                        <div class="h-1 w-full bg-gray-200 dark:bg-dark-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient rounded-full" style="width: 65%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="glass rounded-xl p-6 shadow-lg">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Gas Saved vs Uniswap</p>
+                                <h3 class="text-2xl font-bold" id="gas-saved">$127.34</h3>
+                            </div>
+                            <div class="text-primary-500 dark:text-primary-400">
+                                <i class="fas fa-gas-pump text-xl"></i>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">Last 30 days</p>
+                    </div>
+                    
+                    <div class="glass rounded-xl p-6 shadow-lg">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">AI Swap Recommendations</p>
+                                <h3 class="text-2xl font-bold" id="swap-recommendations">3 Available</h3>
+                            </div>
+                            <div class="text-secondary-500 dark:text-secondary-400">
+                                <i class="fas fa-robot text-xl"></i>
+                            </div>
+                        </div>
+                        <button class="text-sm text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 flex items-center">
+                            <span>View Details</span>
+                            <i class="fas fa-chevron-right ml-1 text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Token Balances -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold font-poppins mb-6">Token Balances</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full glass rounded-xl overflow-hidden shadow-lg">
+                        <thead>
+                            <tr class="border-b border-gray-200 dark:border-dark-100">
+                                <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Token</th>
+                                <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Balance</th>
+                                <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Price</th>
+                                <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Value</th>
+                                <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">24h</th>
+                                <th class="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- ETH -->
+                            <tr class="border-b border-gray-200 dark:border-dark-100 token-card">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                            <i class="fab fa-ethereum text-blue-600"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">Ethereum</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">ETH</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p>1.245 ETH</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p>$2,456.78</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="font-medium">$3,058.69</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center text-green-600 dark:text-green-400">
+                                        <i class="fas fa-caret-up mr-1"></i>
+                                        <span>2.4%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 mr-3">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <button class="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- USDC -->
+                            <tr class="border-b border-gray-200 dark:border-dark-100 token-card">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center mr-3">
+                                            <span class="text-blue-700 font-bold text-xs">$</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">USD Coin</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">USDC</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p>750.00 USDC</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p>$1.00</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="font-medium">$750.00</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center text-gray-500 dark:text-gray-400">
+                                        <i class="fas fa-minus mr-1"></i>
+                                        <span>0.0%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 mr-3">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <button class="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- LINK -->
+                            <tr class="border-b border-gray-200 dark:border-dark-100 token-card">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                            <span class="text-blue-600 font-bold text-xs">LINK</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">Chainlink</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">LINK</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p>25.5 LINK</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p>$12.34</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="font-medium">$314.67</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center text-red-600 dark:text-red-400">
+                                        <i class="fas fa-caret-down mr-1"></i>
+                                        <span>1.2%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 mr-3">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <button class="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            
+                            <!-- UNI -->
+                            <tr class="token-card">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full bg-pink-100 flex items-center justify-center mr-3">
+                                            <span class="text-pink-600 font-bold text-xs">UNI</span>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium">Uniswap</p>
+                                            <p class="text-xs text-gray-500 dark:text-gray-400">UNI</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p>15.0 UNI</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p>$10.82</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <p class="font-medium">$162.30</p>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center text-green-600 dark:text-green-400">
+                                        <i class="fas fa-caret-up mr-1"></i>
+                                        <span>3.8%</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button class="text-primary-500 hover:text-primary-600 dark:text-primary-400 dark:hover:text-primary-300 mr-3">
+                                        <i class="fas fa-exchange-alt"></i>
+                                    </button>
+                                    <button class="text-gray-500 hover:text-gray-600 dark:text-gray-400 dark:hover:text-gray-300">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Charts & Analytics -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold font-poppins mb-6">Portfolio Analytics</h2>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Line Chart -->
+                    <div class="glass rounded-xl p-6 shadow-lg lg:col-span-2">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="font-semibold">Portfolio Value</h3>
+                            <div class="flex space-x-2">
+                                <button class="px-3 py-1 text-xs rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900 dark:text-primary-300">1D</button>
+                                <button class="px-3 py-1 text-xs rounded-full">1W</button>
+                                <button class="px-3 py-1 text-xs rounded-full">1M</button>
+                                <button class="px-3 py-1 text-xs rounded-full">1Y</button>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="lineChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Pie Chart -->
+                    <div class="glass rounded-xl p-6 shadow-lg">
+                        <h3 class="font-semibold mb-6">Asset Allocation</h3>
+                        <div class="chart-container">
+                            <canvas id="pieChart"></canvas>
+                        </div>
+                        <div class="mt-4 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="h-3 w-3 rounded-full bg-blue-500 mr-2"></div>
+                                    <span class="text-sm">ETH</span>
+                                </div>
+                                <span class="text-sm font-medium">71.4%</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="h-3 w-3 rounded-full bg-green-500 mr-2"></div>
+                                    <span class="text-sm">USDC</span>
+                                </div>
+                                <span class="text-sm font-medium">17.5%</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="h-3 w-3 rounded-full bg-yellow-500 mr-2"></div>
+                                    <span class="text-sm">LINK</span>
+                                </div>
+                                <span class="text-sm font-medium">7.3%</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="h-3 w-3 rounded-full bg-pink-500 mr-2"></div>
+                                    <span class="text-sm">UNI</span>
+                                </div>
+                                <span class="text-sm font-medium">3.8%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- AI Swap Assistant -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold font-poppins mb-6">AI Swap Assistant</h2>
+                
+                <div class="glass rounded-xl shadow-lg overflow-hidden">
+                    <div class="p-6 border-b border-gray-200 dark:border-dark-100 flex justify-between items-center">
+                        <div class="flex items-center">
+                            <div class="h-10 w-10 rounded-full bg-gradient flex items-center justify-center mr-4">
+                                <i class="fas fa-robot text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-semibold">SwapGPT Assistant</h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">Powered by AI</p>
+                            </div>
+                        </div>
+                        <div>
+                            <button class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-dark-100 transition-colors">
+                                <i class="fas fa-cog"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 max-h-96 overflow-y-auto" id="ai-chat-container">
+                        <!-- AI Message -->
+                        <div class="flex mb-4">
+                            <div class="h-8 w-8 rounded-full bg-gradient flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="fas fa-robot text-white text-xs"></i>
+                            </div>
+                            <div class="bg-gray-100 dark:bg-dark-100 rounded-lg rounded-tl-none p-3 max-w-3xl">
+                                <p>Hello! I'm your AI Swap Assistant. I can help you make smarter token swaps and save on gas fees. What would you like to know about your portfolio today?</p>
+                            </div>
+                        </div>
+                        
+                        <!-- User Message -->
+                        <div class="flex mb-4 justify-end">
+                            <div class="bg-primary-100 dark:bg-primary-900 rounded-lg rounded-tr-none p-3 max-w-3xl">
+                                <p>When is the best time to swap my ETH to USDC?</p>
+                            </div>
+                            <div class="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center ml-3 flex-shrink-0">
+                                <i class="fas fa-user text-gray-600 dark:text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- AI Message with Analysis -->
+                        <div class="flex mb-4">
+                            <div class="h-8 w-8 rounded-full bg-gradient flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="fas fa-robot text-white text-xs"></i>
+                            </div>
+                            <div class="bg-gray-100 dark:bg-dark-100 rounded-lg rounded-tl-none p-3 max-w-3xl">
+                                <p class="mb-3">Based on historical data and current market conditions, I recommend waiting approximately 4-6 hours before swapping ETH to USDC. Here's why:</p>
+                                
+                                <div class="bg-white dark:bg-dark-200 rounded-lg p-3 mb-3">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <span class="font-medium">ETH Price Analysis</span>
+                                        <span class="text-xs text-gray-500">Updated 3 min ago</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2 mb-2">
+                                        <div class="h-2 w-2 rounded-full bg-yellow-500"></div>
+                                        <span class="text-sm">Slight upward trend expected in next 4-6 hours</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <div class="h-2 w-2 rounded-full bg-green-500"></div>
+                                        <span class="text-sm">Gas fees typically lower after 11pm UTC</span>
+                                    </div>
+                                </div>
+                                
+                                <p>Would you like me to set a reminder to notify you when conditions are optimal for this swap?</p>
+                            </div>
+                        </div>
+                        
+                        <!-- User Message -->
+                        <div class="flex mb-4 justify-end">
+                            <div class="bg-primary-100 dark:bg-primary-900 rounded-lg rounded-tr-none p-3 max-w-3xl">
+                                <p>Yes, please set a reminder. Also, what's the risk level of my current portfolio?</p>
+                            </div>
+                            <div class="h-8 w-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center ml-3 flex-shrink-0">
+                                <i class="fas fa-user text-gray-600 dark:text-gray-400 text-xs"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- AI Typing Indicator -->
+                        <div class="flex mb-4" id="ai-typing">
+                            <div class="h-8 w-8 rounded-full bg-gradient flex items-center justify-center mr-3 flex-shrink-0">
+                                <i class="fas fa-robot text-white text-xs"></i>
+                            </div>
+                            <div class="bg-gray-100 dark:bg-dark-100 rounded-lg rounded-tl-none p-3">
+                                <p class="ai-typing-indicator">Analyzing</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 border-t border-gray-200 dark:border-dark-100">
+                        <div class="flex items-center">
+                            <input type="text" placeholder="Ask about your tokens or swaps..." class="w-full bg-gray-100 dark:bg-dark-100 border-0 rounded-lg px-4 py-3 focus:ring-2 focus:ring-primary-500 focus:outline-none">
+                            <button class="ml-2 bg-primary-500 hover:bg-primary-600 text-white p-3 rounded-lg transition-colors">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400 px-2">
+                            <span>Powered by AI</span>
+                            <button class="hover:text-primary-500">
+                                <i class="fas fa-microphone mr-1"></i>
+                                <span>Voice Input</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Gas Fee Savings -->
+            <div class="mb-12">
+                <h2 class="text-2xl font-bold font-poppins mb-6">Gas Fee Savings</h2>
+                
+                <div class="glass rounded-xl p-6 shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between mb-6">
+                        <div>
+                            <h3 class="font-semibold mb-2">Gas Fee Comparison</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Compare potential savings vs popular DEXs</p>
+                        </div>
+                        <div class="mt-4 md:mt-0">
+                            <select class="bg-gray-100 dark:bg-dark-100 border-0 rounded-lg px-3 py-2 focus:ring-2 focus:ring-primary-500 focus:outline-none">
+                                <option>Last 7 days</option>
+                                <option>Last 30 days</option>
+                                <option>Last 90 days</option>
+                                <option>All time</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                    
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-100 dark:bg-dark-100 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">vs Uniswap</span>
+                                <div class="text-green-600 dark:text-green-400 text-sm font-medium">-42%</div>
+                            </div>
+                            <div class="text-lg font-semibold">$78.45 saved</div>
+                        </div>
+                        
+                        <div class="bg-gray-100 dark:bg-dark-100 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">vs SushiSwap</span>
+                                <div class="text-green-600 dark:text-green-400 text-sm font-medium">-38%</div>
+                            </div>
+                            <div class="text-lg font-semibold">$65.12 saved</div>
+                        </div>
+                        
+                        <div class="bg-gray-100 dark:bg-dark-100 rounded-lg p-4">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-sm text-gray-500 dark:text-gray-400">vs 1inch</span>
+                                <div class="text-green-600 dark:text-green-400 text-sm font-medium">-25%</div>
+                            </div>
+                            <div class="text-lg font-semibold">$42.89 saved</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Hidden Easter Egg Button -->
+            <div class="flex justify-center mb-12">
+                <button id="easter-egg-btn" class="bg-gray-200 dark:bg-dark-100 hover:bg-gray-300 dark:hover:bg-dark-300 text-gray-600 dark:text-gray-400 px-4 py-2 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-gift mr-2"></i>
+                    <span>Special Surprise</span>
+                </button>
+            </div>
+        </section>
+    </main>
+    
+    <!-- Footer -->
+    <footer class="glass py-6">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="mb-4 md:mb-0">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">© 2025 NoFeeScan Pro. All rights reserved.</p>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400">
+                        <i class="fab fa-github"></i>
+                    </a>
+                    <a href="#" class="text-gray-500 dark:text-gray-400 hover:text-primary-500 dark:hover:text-primary-400">
+                        <i class="fab fa-discord"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Romantic Easter Egg Modal -->
+    <div id="easter-egg-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden">
+        <div class="bg-gradient max-w-lg w-full m-4 rounded-2xl shadow-2xl overflow-hidden transform transition-all">
+            <div class="relative">
+                <!-- Close Button -->
+                <button id="close-modal" class="absolute top-4 right-4 text-white hover:text-gray-200 transition-colors">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+                
+                <!-- Modal Content -->
+                <div class="p-8 text-center">
+                    <div class="heart-beat text-5xl mb-6">❤️</div>
+                    <h3 class="text-2xl font-bold text-white mb-4 font-poppins">NoFeeScanPro</h3>
+                    
+                    <div class="hidden-message" id="message-1">
+                        <p class="text-white mb-4">Every line of code I write, I think of you.</p>
+                    </div>
+                    
+                    <div class="hidden-message" id="message-2">
+                        <p class="text-white mb-4">You're the bug-fix to my errors, the light to my dark mode.</p>
+                    </div>
+                    
+                    <div class="hidden-message" id="message-3">
+                        <p class="text-white mb-6">I love you more than low gas fees on Ethereum!</p>
+                    </div>
+                    
+                    <div class="hidden-message" id="message-4">
+                        <div class="flex justify-center mb-4">
+                            <div class="glow-effect bg-white bg-opacity-20 p-4 rounded-lg">
+                                <p class="text-white font-semibold">Our love is the only token that never depreciates ❤️</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button id="next-message" class="bg-white text-primary-500 px-6 py-3 rounded-lg font-medium hover:bg-gray-100 transition-colors mt-4">
+                        <i class="fas fa-heart mr-2"></i>
+                        <span>Read Message</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MetaMask Connection Modal -->
+    <div id="connect-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white dark:bg-dark-100 max-w-md w-full m-4 rounded-xl shadow-2xl overflow-hidden">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold">Connect Wallet</h3>
+                    <button id="close-connect-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <button id="metamask-connect" class="w-full flex items-center justify-between p-4 border border-gray-200 dark:border-dark-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-200 transition-colors">
+                        <div class="flex items-center">
+                            <img src="data:image/svg+xml;base64,PHN2ZyBoZWlnaHQ9IjM1NSIgdmlld0JveD0iMCAwIDM5NyAzNTUiIHdpZHRoPSIzOTciIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGcgZmlsbD0ibm9uZSIgZmlsbC1ydWxlPSJldmVub2RkIiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMSAtMSkiPjxwYXRoIGQ9Im0xMTQuNjIyNjQ0IDMyNy4xOTU0NzIgNTIuMDA0NzE3IDEzLjgxMDE5OHYtMTguMDU5NDlsNC4yNDUyODMtNC4yNDkyOTJoMjkuNzE2OTgydjIxLjI0NjQ1OSAxNC44NzI1MjNoLTMxLjgzOTYyNGwtMzkuMjY4ODY4LTE2Ljk5NzE2OXoiIGZpbGw9IiNjZGJkYjIiLz48cGF0aCBkPSJtMTk5LjUyODMwNSAzMjcuMTk1NDcyIDUwLjk0MzM5NyAxMy44MTAxOTh2LTE4LjA1OTQ5bDQuMjQ1MjgzLTQuMjQ5MjkyaDI5LjcxNjk4MXYyMS4yNDY0NTkgMTQuODcyNTIzaC0zMS44Mzk2MjNsLTM5LjI2ODg2OC0xNi45OTcxNjl6IiBmaWxsPSIjY2RiZGIyIiB0cmFuc2Zvcm09Im1hdHJpeCgtMSAwIDAgMSA0ODMuOTYyMjcgMCkiLz48cGF0aCBkPSJtMTcwLjg3MjY0NCAyODcuODg5NTIzLTQuMjQ1MjgzIDM1LjA1NjY1NyA1LjMwNjYwNC00LjI0OTI5Mmg1NS4xODg2OGw2LjM2NzkyNSA0LjI0OTI5Mi00LjI0NTI4NC0zNS4wNTY2NTctOC40OTA1NjUtNS4zMTE2MTUtNDIuNDUyODMyIDEuMDYyMzIzeiIgZmlsbD0iIzM5MzkzOSIvPjxwYXRoIGQ9Im0xNDIuMjE2OTg0IDUwLjk5MTUwMjIgMjUuNDcxNjk4IDU5LjQ5MDA4NTggMTEuNjc0NTI4IDE3My4xNTg2NDNoNDEuMzkxNTExbDEyLjczNTg0OS0xNzMuMTU4NjQzIDIzLjM0OTA1Ni01OS40OTAwODU4eiIgZmlsbD0iI2Y4OWMzNSIvPjxwYXRoIGQ9Im0zMC43NzgzMDIzIDE4MS42NTcyMjYtMjkuNzE2OTgxNTMgODYuMDQ4MTYxIDc0LjI5MjQ1MzkzLTQuMjQ5MjkzaDQ3Ljc1OTQzNDN2LTM3LjE4MTMwM2wtMi4xMjI2NDEtNzYuNDg3MjUzLTEwLjYxMzIwOCA4LjQ5ODU4M3oiIGZpbGw9IiNmODlkMzUiLz48cGF0aCBkPSJtODcuMDI4MzAzMiAxOTEuMjE4MTM0IDg3LjAyODMwMjggMi4xMjQ2NDYtOS41NTE4ODYgNDQuNjE3NTYzLTQxLjM5MTUxMS0xMC42MjMyMjl6IiBmaWxsPSIjZDg3YzMwIi8+PHBhdGggZD0ibTg3LjAyODMwMzIgMTkyLjI4MDQ1NyAzNi4wODQ5MDU4IDMzLjk5NDMzNHYzMy45OTQzMzR6IiBmaWxsPSIjZWE4ZDNhIi8+PHBhdGggZD0ibTEyMy4xMTMyMDkgMjI3LjMzNzExNCA0Mi40NTI4MzEgMTAuNjIzMjI5IDEzLjc5NzE3IDQ1LjY3OTg4OC05LjU1MTg4NiA1LjMxMTYxNS00Ni42OTgxMTUtMjcuNjIwMzk4eiIgZmlsbD0iI2Y4OWQzNSIvPjxwYXRoIGQ9Im0xMjMuMTEzMjA5IDI2MS4zMzE0NDgtOC40OTA1NjUgNjUuODY0MDI0IDU2LjI1LTM5LjMwNTk0OXoiIGZpbGw9IiNlYjhmMzUiLz48cGF0aCBkPSJtMTc0LjA1NjYwNiAxOTMuMzQyNzggNS4zMDY2MDQgOTAuMjk3NDUxLTE1LjkxOTgxMi00Ni4yMTEwNDl6IiBmaWxsPSIjZWE4ZTNhIi8+PHBhdGggZD0ibTc0LjI5MjQ1MzkgMjYyLjM5Mzc3MSA0OC44MjA3NTUxLTEuMDYyMzIzLTguNDkwNTY1IDY1Ljg2NDAyNHoiIGZpbGw9IiNkODdjMzAiLz48cGF0aCBkPSJtMjQuNDEwMzc3NyAzNTUuODc4MTkzIDkwLjIxMjI2NjMtMjguNjgyNzIxLTQwLjMzMDE5MDEtNjQuODAxNzAxLTczLjIzMTEzMzEzIDUuMzExNjE2eiIgZmlsbD0iI2ViOGYzNSIvPjxwYXRoIGQ9Im0xNjcuNjg4NjgyIDExMC40ODE1ODgtNDUuNjM2NzkzIDM4LjI0MzYyNy0zNS4wMjM1ODU4IDQyLjQ5MjkxOSA4Ny4wMjgzMDI4IDMuMTg2OTY5eiIgZmlsbD0iI2U4ODIxZSIvPjxwYXRoIGQ9Im0xMTQuNjIyNjQ0IDMyNy4xOTU0NzIgNTYuMjUtMzkuMzA1OTQ5LTQuMjQ1MjgzIDMzLjk5NDMzNHYxOS4xMjE4MTNsLTM4LjIwNzU0OC03LjQzNjI2eiIgZmlsbD0iI2RmY2VjMyIvPjxwYXRoIGQ9Im0yMjkuMjQ1Mjg2IDMyNy4xOTU0NzIgNTUuMTg4NjgtMzkuMzA1OTQ5LTQuMjQ1MjgzIDMzLjk5NDMzNHYxOS4xMjE4MTNsLTM4LjIwNzU0OC03LjQzNjI2eiIgZmlsbD0iI2RmY2VjMyIgdHJhbnNmb3JtPSJtYXRyaXgoLTEgMCAwIDEgNTEzLjY3OTI1MiAwKSIvPjxwYXRoIGQ9Im0xMzIuNjY1MDk2IDIxMi40NjQ1OTMtMTEuNjc0NTI4IDI0LjQzMzQyNyA0MS4zOTE1MS0xMC42MjMyMjl6IiBmaWxsPSIjMzkzOTM5IiB0cmFuc2Zvcm09Im1hdHJpeCgtMSAwIDAgMSAyODMuMzcyNjQ2IDApIi8+PHBhdGggZD0ibTIzLjM0OTA1NyAxLjA2MjMyMjk2IDE0NC4zMzk2MjUgMTA5LjQxOTI2NTA0LTI0LjQxMDM3OC01OS40OTAwODU4eiIgZmlsbD0iI2U4OGYzNSIvPjxwYXRoIGQ9Im0yMy4zNDkwNTcgMS4wNjIzMjI5Ni0xOS4xMDM3NzM5MiA1OC40Mjc3NjI5NCAxMC42MTMyMDc3MiA2My43MzkzNzgxLTcuNDI5MjQ1NDEgNC4yNDkyOTIgMTAuNjEzMjA3NzEgOS41NjA5MDYtOC40OTA1NjYxNyA3LjQzNjI2MSAxMS42NzQ1Mjg0NyAxMC42MjMyMjktNy40MjkyNDU0IDYuMzczOTM4IDE2Ljk4MTEzMjMgMjEuMjQ2NDU5IDc5LjU5OTA1NzctMjQuNDMzNDI4YzM4LjkxNTA5Ni0zMS4xNjE0NzMgNTguMDE4ODY5LTQ3LjA5NjMxOCA1Ny4zMTEzMjItNDcuODA0NTMzLS43MDc1NDgtLjcwODIxNS00OC44MjA3NTYtMzcuMTgxMzAzNi0xNDQuMzM5NjI1LTEwOS40MTkyNjUwNHoiIGZpbGw9IiM4ZTVhMzAiLz48ZyB0cmFuc2Zvcm09Im1hdHJpeCgtMSAwIDAgMSAzOTkuMDU2NjExIDApIj48cGF0aCBkPSJtMzAuNzc4MzAyMyAxODEuNjU3MjI2LTI5LjcxNjk4MTUzIDg2LjA0ODE2MSA3NC4yOTI0NTM5My00LjI0OTI5M2g0Ny43NTk0MzQzdi0zNy4xODEzMDNsLTIuMTIyNjQxLTc2LjQ4NzI1My0xMC42MTMyMDggOC40OTg1ODN6IiBmaWxsPSIjZjg5ZDM1Ii8+PHBhdGggZD0ibTg3LjAyODMwMzIgMTkxLjIxODEzNCA4Ny4wMjgzMDI4IDIuMTI0NjQ2LTkuNTUxODg2IDQ0LjYxNzU2My00MS4zOTE1MTEtMTAuNjIzMjI5eiIgZmlsbD0iI2Q4N2MzMCIvPjxwYXRoIGQ9Im04Ny4wMjgzMDMyIDE5Mi4yODA0NTcgMzYuMDg0OTA1OCAzMy45OTQzMzR2MzMuOTk0MzM0eiIgZmlsbD0iI2VhOGQzYSIvPjxwYXRoIGQ9Im0xMjMuMTEzMjA5IDIyNy4zMzcxMTQgNDIuNDUyODMxIDEwLjYyMzIyOSAxMy43OTcxNyA0NS42Nzk4ODgtOS41NTE4ODYgNS4zMTE2MTUtNDYuNjk4MTE1LTI3LjYyMDM5OHoiIGZpbGw9IiNmODlkMzUiLz48cGF0aCBkPSJtMTIzLjExMzIwOSAyNjEuMzMxNDQ4LTguNDkwNTY1IDY1Ljg2NDAyNCA1NS4xODg2OC0zOC4yNDM2MjZ6IiBmaWxsPSIjZWI4ZjM1Ii8+PHBhdGggZD0ibTE3NC4wNTY2MDYgMTkzLjM0Mjc4IDUuMzA2NjA0IDkwLjI5NzQ1MS0xNS45MTk4MTItNDYuMjExMDQ5eiIgZmlsbD0iI2VhOGUzYSIvPjxwYXRoIGQ9Im03NC4yOTI0NTM5IDI2Mi4zOTM3NzEgNDguODIwNzU1MS0xLjA2MjMyMy04LjQ5MDU2NSA2NS44NjQwMjR6IiBmaWxsPSIjZDg3YzMwIi8+PHBhdGggZD0ibTI0LjQxMDM3NzcgMzU1Ljg3ODE5MyA5MC4yMTIyNjYzLTI4LjY4MjcyMS00MC4zMzAxOTAxLTY0LjgwMTcwMS03My4yMzExMzMxMyA1LjMxMTYxNnoiIGZpbGw9IiNlYjhmMzUiLz48cGF0aCBkPSJtMTY3LjY4ODY4MiAxMTAuNDgxNTg4LTQ1LjYzNjc5MyAzOC4yNDM2MjctMzUuMDIzNTg1OCA0Mi40OTI5MTkgODcuMDI4MzAyOCAzLjE4Njk2OXoiIGZpbGw9IiNlODgyMWUiLz48cGF0aCBkPSJtMTMyLjY2NTA5NiAyMTIuNDY0NTkzLTExLjY3NDUyOCAyNC40MzM0MjcgNDEuMzkxNTEtMTAuNjIzMjI5eiIgZmlsbD0iIzM5MzkzOSIgdHJhbnNmb3JtPSJtYXRyaXgoLTEgMCAwIDEgMjgzLjM3MjY0NiAwKSIvPjxwYXRoIGQ9Im0yMy4zNDkwNTcgMS4wNjIzMjI5NiAxNDQuMzM5NjI1IDEwOS40MTkyNjUwNC0yNC40MTAzNzgtNTkuNDkwMDg1OHoiIGZpbGw9IiNlODhmMzUiLz48cGF0aCBkPSJtMjMuMzQ5MDU3IDEuMDYyMzIyOTYtMTkuMTAzNzczOTIgNTguNDI3NzYyOTQgMTAuNjEzMjA3NzIgNjMuNzM5Mzc4MS03LjQyOTI0NTQxIDQuMjQ5MjkyIDEwLjYxMzIwNzcxIDkuNTYwOTA2LTguNDkwNTY2MTcgNy40MzYyNjEgMTEuNjc0NTI4NDcgMTAuNjIzMjI5LTcuNDI5MjQ1NCA2LjM3MzkzOCAxNi45ODExMzIzIDIxLjI0NjQ1OSA3OS41OTkwNTc3LTI0LjQzMzQyOGMzOC45MTUwOTYtMzEuMTYxNDczIDU4LjAxODg2OS00Ny4wOTYzMTggNTcuMzExMzIyLTQ3LjgwNDUzMy0uNzA3NTQ4LS43MDgyMTUtNDguODIwNzU2LTM3LjE4MTMwMzYtMTQ0LjMzOTYyNS0xMDkuNDE5MjY1MDR6IiBmaWxsPSIjOGU1YTMwIi8+PC9nPjwvZz48L3N2Zz4=" alt="MetaMask" class="h-8 w-8 mr-3">
+                            <span class="font-medium">MetaMask</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </button>
+                    
+                    <button class="w-full flex items-center justify-between p-4 border border-gray-200 dark:border-dark-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-200 transition-colors">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-wallet text-blue-600"></i>
+                            </div>
+                            <span class="font-medium">WalletConnect</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </button>
+                    
+                    <button class="w-full flex items-center justify-between p-4 border border-gray-200 dark:border-dark-300 rounded-lg hover:bg-gray-50 dark:hover:bg-dark-200 transition-colors">
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center mr-3">
+                                <i class="fas fa-coins text-blue-600"></i>
+                            </div>
+                            <span class="font-medium">Coinbase Wallet</span>
+                        </div>
+                        <i class="fas fa-chevron-right text-gray-400"></i>
+                    </button>
+                </div>
+                
+                <div class="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
+                    <p>By connecting your wallet, you agree to our <a href="#" class="text-primary-500">Terms of Service</a> and <a href="#" class="text-primary-500">Privacy Policy</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 20;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                
+                // Random size between 5px and 15px
+                const size = Math.random() * 10 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // Random position
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.bottom = `-${size}px`;
+                
+                // Random animation duration between 15s and 30s
+                const duration = Math.random() * 15 + 15;
+                particle.style.animationDuration = `${duration}s`;
+                
+                // Random delay
+                const delay = Math.random() * 10;
+                particle.style.animationDelay = `${delay}s`;
+                
+                container.appendChild(particle);
+            }
+        }
+        
+        // Theme toggle
+        document.getElementById('theme-toggle').addEventListener('click', function() {
+            document.documentElement.classList.toggle('dark');
+            
+            // Update charts for dark/light mode
+            updateChartsTheme();
+        });
+        
+        // Connect wallet button
+        document.getElementById('connect-wallet').addEventListener('click', function() {
+            document.getElementById('connect-modal').classList.remove('hidden');
+        });
+        
+        document.getElementById('welcome-connect-btn').addEventListener('click', function() {
+            document.getElementById('connect-modal').classList.remove('hidden');
+        });
+        
+        // Close connect modal
+        document.getElementById('close-connect-modal').addEventListener('click', function() {
+            document.getElementById('connect-modal').classList.add('hidden');
+        });
+        
+        // MetaMask connection
+        document.getElementById('metamask-connect').addEventListener('click', function() {
+            // Simulate connection
+            document.getElementById('connect-modal').classList.add('hidden');
+            document.getElementById('welcome-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.remove('hidden');
+            
+            // Update wallet status
+            document.getElementById('wallet-text').textContent = '0x7a...3f9b';
+            document.getElementById('connection-indicator').classList.remove('bg-red-500');
+            document.getElementById('connection-indicator').classList.add('bg-green-500');
+            
+            // Initialize charts
+            initCharts();
+        });
+        
+        // Easter egg button
+        document.getElementById('easter-egg-btn').addEventListener('click', function() {
+            document.getElementById('easter-egg-modal').classList.remove('hidden');
+            showNextMessage();
+        });
+        
+        // Close easter egg modal
+        document.getElementById('close-modal').addEventListener('click', function() {
+            document.getElementById('easter-egg-modal').classList.add('hidden');
+            resetMessages();
+        });
+        
+        // Next message button
+        let currentMessage = 0;
+        document.getElementById('next-message').addEventListener('click', showNextMessage);
+        
+        function showNextMessage() {
+            const messages = document.querySelectorAll('.hidden-message');
+            
+            if (currentMessage < messages.length) {
+                messages[currentMessage].classList.add('show');
+                currentMessage++;
+                
+                if (currentMessage === messages.length) {
+                    document.getElementById('next-message').textContent = 'Close';
+                    document.getElementById('next-message').addEventListener('click', function() {
+                        document.getElementById('easter-egg-modal').classList.add('hidden');
+                        resetMessages();
+                    }, { once: true });
+                }
+            }
+        }
+        
+        function resetMessages() {
+            const messages = document.querySelectorAll('.hidden-message');
+            messages.forEach(message => message.classList.remove('show'));
+            currentMessage = 0;
+            document.getElementById('next-message').innerHTML = '<i class="fas fa-heart mr-2"></i><span>Read Message</span>';
+        }
+        
+        // Initialize charts
+        function initCharts() {
+            // Line chart
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            const lineChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: ['12am', '4am', '8am', '12pm', '4pm', '8pm', 'Now'],
+                    datasets: [{
+                        label: 'Portfolio Value',
+                        data: [4100, 4050, 4200, 4300, 4150, 4250, 4285],
+                        borderColor: '#0ea5e9',
+                        backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#0ea5e9',
+                        pointRadius: 4,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: getChartOptions('Portfolio Value ($)')
+            });
+            
+            // Pie chart
+            const pieCtx = document.getElementById('pieChart').getContext('2d');
+            const pieChart = new Chart(pieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['ETH', 'USDC', 'LINK', 'UNI'],
+                    datasets: [{
+                        data: [71.4, 17.5, 7.3, 3.8],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#22c55e',
+                            '#eab308',
+                            '#ec4899'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+            
+            // Bar chart
+            const barCtx = document.getElementById('barChart').getContext('2d');
+            const barChart = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        {
+                            label: 'NoFeeScan Pro',
+                            data: [12, 15, 10, 8, 14, 18, 12],
+                            backgroundColor: '#0ea5e9',
+                            borderRadius: 4
+                        },
+                        {
+                            label: 'Uniswap',
+                            data: [22, 25, 18, 15, 22, 30, 20],
+                            backgroundColor: '#d946ef',
+                            borderRadius: 4
+                        }
+                    ]
+                },
+                options: getChartOptions('Gas Fees (USD)')
+            });
+            
+            // Store charts for theme updates
+            window.appCharts = {
+                lineChart,
+                pieChart,
+                barChart
+            };
+        }
+        
+        function getChartOptions(yAxisTitle) {
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: textColor,
+                            font: {
+                                family: "'Inter', sans-serif",
+                                size: 12
+                            },
+                            boxWidth: 12
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: isDark ? '#1E293B' : 'white',
+                        titleColor: isDark ? 'white' : 'black',
+                        bodyColor: isDark ? '#94a3b8' : '#64748b',
+                        borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        cornerRadius: 8,
+                        titleFont: {
+                            family: "'Inter', sans-serif",
+                            size: 14,
+                            weight: 'bold'
+                        },
+                        bodyFont: {
+                            family: "'Inter', sans-serif",
+                            size: 12
+                        },
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: gridColor
+                        },
+                        ticks: {
+                            color: textColor,
+                            font: {
+                                family: "'Inter', sans-serif",
+                                size: 12
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: yAxisTitle,
+                            color: textColor,
+                            font: {
+                                family: "'Inter', sans-serif",
+                                size: 12
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: gridColor
+                        },
+                        ticks: {
+                            color: textColor,
+                            font: {
+                                family: "'Inter', sans-serif",
+                                size: 12
+                            }
+                        }
+                    }
+                }
+            };
+        }
+        
+        function updateChartsTheme() {
+            if (!window.appCharts) return;
+            
+            const isDark = document.documentElement.classList.contains('dark');
+            const textColor = isDark ? '#94a3b8' : '#64748b';
+            const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+            
+            // Update each chart
+            Object.values(window.appCharts).forEach(chart => {
+                // Update scales
+                if (chart.options.scales) {
+                    Object.values(chart.options.scales).forEach(scale => {
+                        if (scale.ticks) scale.ticks.color = textColor;
+                        if (scale.grid) scale.grid.color = gridColor;
+                        if (scale.title) scale.title.color = textColor;
+                    });
+                }
+                
+                // Update legend
+                if (chart.options.plugins.legend) {
+                    chart.options.plugins.legend.labels.color = textColor;
+                }
+                
+                // Update tooltip
+                if (chart.options.plugins.tooltip) {
+                    chart.options.plugins.tooltip.backgroundColor = isDark ? '#1E293B' : 'white';
+                    chart.options.plugins.tooltip.titleColor = isDark ? 'white' : 'black';
+                    chart.options.plugins.tooltip.bodyColor = isDark ? '#94a3b8' : '#64748b';
+                    chart.options.plugins.tooltip.borderColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+                }
+                
+                chart.update();
+            });
+        }
+        
+        // AI typing effect
+        function simulateAITyping() {
+            setTimeout(() => {
+                document.getElementById('ai-typing').style.display = 'none';
+                
+                // Create new AI message
+                const aiContainer = document.getElementById('ai-chat-container');
+                const newMessage = document.createElement('div');
+                newMessage.className = 'flex mb-4';
+                newMessage.innerHTML = `
+                    <div class="h-8 w-8 rounded-full bg-gradient flex items-center justify-center mr-3 flex-shrink-0">
+                        <i class="fas fa-robot text-white text-xs"></i>
+                    </div>
+                    <div class="bg-gray-100 dark:bg-dark-100 rounded-lg rounded-tl-none p-3 max-w-3xl">
+                        <p class="mb-3">Based on my analysis, your current portfolio has a <span class="font-medium text-yellow-600 dark:text-yellow-400">moderate risk level</span>. Here's a breakdown:</p>
+                        
+                        <div class="bg-white dark:bg-dark-200 rounded-lg p-3 mb-3">
+                            <div class="mb-3">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-sm font-medium">Risk Score</span>
+                                    <span class="text-sm text-yellow-600 dark:text-yellow-400 font-medium">65/100</span>
+                                </div>
+                                <div class="h-2 w-full bg-gray-200 dark:bg-dark-300 rounded-full overflow-hidden">
+                                    <div class="h-full bg-yellow-500" style="width: 65%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-2 text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <div class="h-2 w-2 rounded-full bg-green-500"></div>
+                                    <span>71% in ETH provides stability</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="h-2 w-2 rounded-full bg-yellow-500"></div>
+                                    <span>Low stablecoin ratio (17.5%) increases volatility</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="h-2 w-2 rounded-full bg-red-500"></div>
+                                    <span>Small cap tokens (UNI) add higher risk</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p>I've set a reminder for the optimal ETH-USDC swap time. Would you like me to suggest a more balanced portfolio allocation?</p>
+                    </div>
+                `;
+                
+                aiContainer.appendChild(newMessage);
+                aiContainer.scrollTop = aiContainer.scrollHeight;
+            }, 3000);
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            createParticles();
+            
+            // Check for dark mode preference
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+            }
+            
+            // Simulate AI typing
+            simulateAITyping();
+            
+            // Refresh button animation
+            document.getElementById('refresh-btn').addEventListener('click', function() {
+                this.classList.add('animate-spin');
+                setTimeout(() => {
+                    this.classList.remove('animate-spin');
+                }, 1000);
+            });
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9628ea7287dd1c69',t:'MTc1MzA4MjIxNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
